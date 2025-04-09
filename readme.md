@@ -2,138 +2,244 @@
 
 ## Overview
 
-EarthGPT Interface is a React-based web application that leverages the OpenRouter API to provide an AI assistant specialized in analyzing LISS-4 satellite imagery and answering general questions. It features a chat interface, image upload capabilities, dark mode, and local storage for chat history.
+EarthGPT Interface is a sophisticated React-based web application designed for analyzing LISS-4 satellite imagery and handling general queries through an AI interface. Built with modern web technologies, it provides a ChatGPT-like experience with additional capabilities for image analysis.
 
 ## Features
 
--   **Chat Interface**: A user-friendly interface for interacting with the EarthGPT AI assistant.
--   **Satellite Image Analysis**: Ability to upload and analyze LISS-4 satellite imagery.
--   **Dark Mode**: Toggle between light and dark themes for comfortable viewing.
--   **Chat History**: Local storage to persist and display recent chat history.
--   **Lucide React Icons**: Utilizes Lucide React for consistent and visually appealing icons.
--   **Markdown Support**: Renders AI responses in Markdown format with syntax highlighting for code snippets.
+### Core Functionality
+- **AI-Powered Chat Interface**: Seamless communication with AI models through OpenRouter API
+- **Satellite Image Analysis**: Upload and analyze LISS-4 satellite imagery
+- **Persistent Chat History**: Local storage integration for chat preservation
+- **Multiple Chat Sessions**: Create and manage multiple conversation threads
+- **Image Upload Support**: Handles satellite image uploads up to 10MB
+- **Markdown Response Rendering**: Beautiful rendering of AI responses with syntax highlighting
 
-## Technologies Used
+### User Interface
+- **Dark/Light Mode**: Toggle between dark and light themes
+- **Responsive Design**: Fully responsive layout using Tailwind CSS
+- **Code Highlighting**: Syntax highlighting for code blocks with copy functionality
+- **Loading States**: Visual feedback during API operations
+- **Error Handling**: Comprehensive error management with user-friendly messages
+- **Sidebar Navigation**: Easy access to chat history and controls
 
--   **React**: A JavaScript library for building user interfaces.
--   **Vite**: A build tool that provides a fast and optimized development experience.
--   **TypeScript**: A typed superset of JavaScript that enhances code quality and maintainability.
--   **Tailwind CSS**: A utility-first CSS framework for styling the application.
--   **Lucide React**: A library of beautiful and consistent icons.
--   **Axios**: A promise-based HTTP client for making API requests.
--   **React Markdown**: A component for rendering Markdown content.
--   **React Syntax Highlighter**: A component for syntax highlighting in code snippets.
--   **Remark GFM**: A plugin for React Markdown to support GitHub Flavored Markdown.
--   **OpenRouter API**: An API used to access various AI models, including those capable of analyzing satellite imagery.
+### Technical Features
+- **TypeScript Integration**: Full type safety throughout the application
+- **Modern React Patterns**: Built with React 18 and functional components
+- **Environment Variable Support**: Secure API key management
+- **Local Storage Management**: Efficient chat history persistence with quota handling
+- **Markdown Processing**: Support for GitHub Flavored Markdown
 
-## Setup Instructions
+## Technical Stack
 
-1.  **Clone the repository**:
+### Core Technologies
+- **React**: ^18.3.1
+- **TypeScript**: ^5.5.3
+- **Vite**: ^5.4.2
+- **Tailwind CSS**: ^3.4.1
 
-    ```bash
-    git clone <repository-url>
-    cd earth-gpt-interface
-    ```
+### Key Dependencies
+- **axios**: ^1.6.7 - HTTP client for API requests
+- **lucide-react**: ^0.344.0 - Icon components
+- **react-markdown**: ^9.0.1 - Markdown rendering
+- **react-syntax-highlighter**: ^15.5.0 - Code syntax highlighting
+- **remark-gfm**: ^4.0.0 - GitHub Flavored Markdown support
 
-2.  **Install dependencies**:
-
-    ```bash
-    npm install
-    ```
-
-3.  **Environment Variables**:
-
-    Create a `.env` file in the root directory and add your OpenRouter API key:
-
-    ```
-    VITE_DEEPSEEK_API_KEY=your_openrouter_api_key
-    ```
-
-4.  **Run the application**:
-
-    ```bash
-    npm run dev
-    ```
-
-    Open your browser and navigate to `http://localhost:5173` to view the application.
+### Development Tools
+- **@vitejs/plugin-react**: ^4.3.1
+- **@tailwindcss/typography**: ^0.5.10
+- **eslint**: ^9.9.1
+- **autoprefixer**: ^10.4.18
+- **postcss**: ^8.4.35
 
 ## Project Structure
 
--   `.env`: Environment variables (API keys, configuration settings).
--   `eslint.config.js`: ESLint configuration for linting JavaScript and TypeScript code.
--   `index.html`: The main HTML file.
--   `package.json`: Node.js package file containing project dependencies and scripts.
--   `postcss.config.js`: PostCSS configuration for Tailwind CSS and Autoprefixer.
--   `src/`: Source code directory.
-    -   `App.tsx`: The main application component.
-    -   `components/`: Reusable React components.
-        -   `ChatMessage.tsx`: Component for displaying individual chat messages.
-    -   `types.ts`: TypeScript interfaces for data types used in the application.
-    -   `index.css`: Global CSS file for Tailwind CSS directives.
-    -   `main.tsx`: Entry point for the React application.
-    -   `vite-env.d.ts`: TypeScript declaration file for Vite environment variables.
--   `tailwind.config.js`: Tailwind CSS configuration file.
--   `tsconfig.json`: TypeScript configuration file.
--   `vite.config.ts`: Vite configuration file.
+```
+earth-gpt-interface/
+├── src/
+│   ├── components/
+│   │   └── ChatMessage.tsx    # Chat message component
+│   ├── types.ts              # TypeScript interfaces
+│   ├── App.tsx               # Main application component
+│   ├── main.tsx             # Application entry point
+│   └── index.css            # Global styles
+├── public/
+├── .env                     # Environment variables
+├── index.html              # HTML entry point
+├── package.json            # Project configuration
+├── tsconfig.json           # TypeScript configuration
+├── tailwind.config.js      # Tailwind CSS configuration
+├── postcss.config.js       # PostCSS configuration
+└── vite.config.ts         # Vite configuration
+```
 
-## Code Highlights
+## Setup and Installation
 
-### API Request
+### Prerequisites
+- Node.js (v16 or higher)
+- npm (v7 or higher)
 
-The `sendMessage` function in `src/App.tsx` sends requests to the OpenRouter API:
+### Installation Steps
 
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd earth-gpt-interface
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Create `.env` file:
+   ```env
+   VITE_DEEPSEEK_API_KEY=your_openrouter_api_key
+   ```
+
+4. Start development server:
+   ```bash
+   npm run dev
+   ```
+
+## Configuration
+
+### Environment Variables
+- `VITE_DEEPSEEK_API_KEY`: OpenRouter API key for AI model access
+
+### Constants
+- `MAX_IMAGE_SIZE`: 10MB (image upload limit)
+- `MAX_BASE64_LENGTH`: 13MB (encoded image size limit)
+- `MAX_CHATS`: 10 (maximum stored chats)
+- `MAX_MESSAGES_PER_CHAT`: 50 (messages per chat limit)
+
+## Core Components
+
+### App.tsx
+The main application component handles:
+- Chat state management
+- Image upload processing
+- API communication
+- Dark mode toggling
+- Local storage interaction
+- Error handling
+
+### ChatMessage.tsx
+Responsible for:
+- Message rendering
+- Markdown processing
+- Code block handling
+- Syntax highlighting
+- Copy functionality
+
+## API Integration
+
+### OpenRouter API
+- **Base URL**: `https://openrouter.ai/api/v1/chat/completions`
+- **Model**: `meta-llama/llama-4-maverick:free`
+- **Features**:
+  - Text completion
+  - Image analysis
+  - Context awareness
+
+### Request Format
 ```typescript
-const response = await axios({
-  method: 'post',
-  url: API_URL,
-  data: requestData,
-  headers: {
-    'Authorization': `Bearer ${import.meta.env.VITE_DEEPSEEK_API_KEY}`,
-    'Content-Type': 'application/json',
-    'HTTP-Referer': window.location.origin,
-    'X-Title': 'EarthGPT'
-  },
-  timeout: 60000
-});
-Chat History Management
-The application uses local storage to persist chat history. The useEffect hook in src/App.tsx manages saving and limiting the number of chats:
-
-
-useEffect(() => {
-  try {
-    const limitedChats = chats.slice(0, MAX_CHATS).map(chat => ({
-      ...chat,
-      messages: chat.messages.slice(-MAX_MESSAGES_PER_CHAT)
-    }));
-    localStorage.setItem('chats', JSON.stringify(limitedChats));
-    if (limitedChats.length !== chats.length) {
-      setChats(limitedChats);
+{
+  model: MODEL_ID,
+  messages: [
+    {
+      role: "user",
+      content: string | [
+        { type: "text", text: string },
+        { type: "image_url", image_url: { url: string } }
+      ]
     }
-  } catch (error) {
-    console.error('Error saving chats to localStorage:', error);
-    const limitedChats = chats.slice(0, MAX_CHATS);
-    setChats(limitedChats);
-  }
-}, [chats]);
-Markdown Rendering
-The ChatMessage component in src/components/ChatMessage.tsx uses react-markdown to render Markdown content:
+  ],
+  max_tokens: 1000
+}
+```
 
+## Error Handling
 
-<ReactMarkdown
-  remarkPlugins={[remarkGfm]}
-  components={{
-    code({node, inline, className, children, ...props}) {
-      // Code block rendering logic
-    }
-  }}
->
-  {message.content}
-</ReactMarkdown>
-Error Handling
-The application includes error handling for API requests and local storage operations. It displays user-friendly error messages in the chat interface.
+### API Errors
+- 401: Invalid API key
+- 403: Access forbidden
+- 429: Rate limit exceeded
+- 402: Payment required
 
-Contributing
-Contributions are welcome! Please fork the repository and submit a pull request with your changes.
+### Local Storage
+- Quota exceeded handling
+- Data persistence fallbacks
+- Chat history management
 
-License
-MIT
+## Performance Considerations
+
+### Image Processing
+- Size limits enforcement
+- Base64 encoding optimization
+- Efficient storage management
+
+### State Management
+- Chat history pagination
+- Message limiting
+- Local storage optimization
+
+## Browser Support
+
+### Minimum Requirements
+- Modern Chromium-based browsers
+- Firefox 60+
+- Safari 12+
+- Edge 79+
+
+### Features Requiring Support
+- Local Storage API
+- Fetch API
+- ES6+ JavaScript
+- CSS Grid/Flexbox
+
+## Development Guidelines
+
+### Code Style
+- Functional components
+- TypeScript strict mode
+- ESLint configuration
+- Prettier formatting
+
+### Best Practices
+- Component composition
+- React hooks usage
+- Error boundary implementation
+- Performance optimization
+
+## Build and Deployment
+
+### Development
+```bash
+npm run dev
+```
+
+### Production Build
+```bash
+npm run build
+```
+
+### Preview Production Build
+```bash
+npm run preview
+```
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit changes
+4. Push to the branch
+5. Create a Pull Request
+
+## Support
+
+For support, please open an issue in the repository or contact the maintainers.
