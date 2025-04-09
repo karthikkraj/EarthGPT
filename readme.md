@@ -247,4 +247,5 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 ## Support
 
-For support, please open an issue in the repository or contact the maintainers.
+For support, please do contact.
+[Karthik Raj](https://github.com/karthikkraj)
