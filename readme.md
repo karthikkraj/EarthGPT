@@ -213,6 +213,11 @@ Responsible for:
 
 ## Build and Deployment
 
+### Install Dependencies
+```bash
+npm install
+```
+
 ### Development
 ```bash
 npm run dev
