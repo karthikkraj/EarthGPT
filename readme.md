@@ -82,7 +82,7 @@ earth-gpt-interface/
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/karthikkraj/EarthGPT
    cd earth-gpt-interface
    ```
 
