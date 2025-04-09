@@ -220,5 +220,3 @@ Licensed under the [MIT License](LICENSE).
 For questions or support, contact [Karthik Raj](https://github.com/karthikkraj).
 
 ---
-
-Would you like further refinements or focus on any specific section?
