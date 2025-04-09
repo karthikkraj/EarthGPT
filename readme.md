@@ -1,5 +1,3 @@
-Your Markdown documentation is already comprehensive, but some areas could use refinement for clarity, organization, or standard formatting. Here's an updated version with enhancements:
-
 ---
 
 # EarthGPT Interface
