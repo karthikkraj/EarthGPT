@@ -1,10 +1,10 @@
 ---
 
-# EarthGPT Interface
+# EarthGPT
 
 ## Overview
 
-EarthGPT Interface is a cutting-edge React-based web application for analyzing LISS-4 satellite imagery and handling general queries through an AI interface. It combines modern web technologies to deliver a ChatGPT-like experience with advanced image analysis features.
+EarthGPT is a cutting-edge React-based web application for analyzing LISS-4 satellite imagery and handling general queries through an AI interface. It combines modern web technologies to deliver a ChatGPT-like experience with advanced image analysis features.
 
 ---
 
