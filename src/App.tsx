@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Satellite, Send, Upload, Moon, Sun, Plus, MessageSquare, Trash2 } from 'lucide-react';
-import { Message, Chat } from './types';
+import type { Message, Chat, OpenRouterResponse, APIResponse } from './types';
+import { createMessage } from './utils/message';
 import ChatMessage from './components/ChatMessage';
 import axios from 'axios';
 
@@ -15,17 +16,13 @@ function App() {
   });
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: `# Welcome to EarthGPT! 👋
+    createMessage('assistant', `# Welcome to EarthGPT! 👋
 
-I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answering general questions.`,
-    }
+I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answering general questions.`)
   ]);
   const [input, setInput] = useState('');
   const [currentImage, setCurrentImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Maximum allowed image size in bytes (10MB)
   const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
@@ -38,8 +35,8 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
 
   // OpenRouter API URL
   const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-  // The OpenRouter model ID
-  const MODEL_ID = 'meta-llama/llama-4-maverick:free';
+  // The OpenRouter model ID - Updated to Gemini 2.5 Pro
+  const MODEL_ID = 'google/gemini-2.5-pro-exp-03-25:free';
 
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
@@ -131,18 +128,43 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
     return title;
   };
 
-  const formatResponse = (text: string) => {
-    // Add markdown formatting if not present
-    if (!text.includes('#') && !text.includes('*') && !text.includes('```')) {
-      const paragraphs = text.split('\n\n');
-      return paragraphs.map(p => {
-        if (p.includes(':')) {
-          return `**${p.split(':')[0]}:** ${p.split(':').slice(1).join(':')}`;
-        }
-        return p;
-      }).join('\n\n');
+  const formatResponse = (response: OpenRouterResponse) => {
+    let messageContent: string;
+
+    // Check for token limit warnings
+    if (response.result?.message?.content?.includes('[MAX_TOKENS]')) {
+      return '### Warning\n\nResponse was truncated due to length limits. Please try a more specific query.';
     }
-    return text;
+
+    // Check for the expected Gemini response format
+    if (response.result?.message?.content) {
+      messageContent = response.result.message.content;
+    } else if (response.choices?.[0]?.message?.content) {
+      messageContent = response.choices[0].message.content;
+    } else {
+      messageContent = 'Unexpected response format.';
+    }
+
+    // Chunk long responses if needed
+    const MAX_CHUNK_SIZE = 1500;
+    if (messageContent.length > MAX_CHUNK_SIZE) {
+      const chunks = [];
+      for (let i = 0; i < messageContent.length; i += MAX_CHUNK_SIZE) {
+        chunks.push(messageContent.substring(i, i + MAX_CHUNK_SIZE));
+      }
+      return chunks.join('\n\n---\n\n');
+    }
+
+    // Enhanced formatting with markdown
+    const formattedText = messageContent
+      .replace(/\n/g, '\n\n') // Double spacing
+      .replace(/^##\s+(.*)/gm, '## $1\n') // Section headers
+      .replace(/^-\s+(.*)/gm, '- $1\n') // List items
+      .replace(/\*\*(.*?)\*\*/g, '**$1**') // Bold
+      .replace(/^\d+\.\s+(.*)/gm, '$1\n') // Numbered lists
+      .replace(/\n\s*\n/g, '\n\n'); // Clean extra newlines
+
+    return formattedText;
   };
 
   const sendMessage = async (question: string) => {
@@ -154,8 +176,36 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
     try {
       console.log('Initiating API request to OpenRouter...');
       
-      // Format the request for OpenRouter API
-      const messages = [
+      // Format the request for OpenRouter API with full chat history
+      const apiMessages = [
+        // Include all previous messages in the conversation
+        ...messages.map((msg: Message) => {
+          const baseMessage = {
+            role: msg.role,
+            content: msg.content
+          };
+          
+          // Only add image content if present
+          if (msg.image) {
+            return {
+              ...baseMessage,
+              content: [
+                {
+                  type: "text",
+                  text: msg.content
+                },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: msg.image
+                  }
+                }
+              ]
+            };
+          }
+          return baseMessage;
+        }),
+        // Add the current user message
         {
           role: "user",
           content: currentImage ? [
@@ -175,8 +225,8 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
 
       const requestData = {
         model: MODEL_ID,
-        messages,
-        max_tokens: 1000
+        messages: apiMessages,
+        max_tokens: 4000 // Increased token limit for longer responses
       };
 
       console.log('Request configuration:', {
@@ -188,10 +238,7 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
         }
       });
 
-      const response = await axios({
-        method: 'post',
-        url: API_URL,
-        data: requestData,
+      const response = await axios.post<OpenRouterResponse>(API_URL, requestData, {
         headers: {
           'Authorization': `Bearer ${import.meta.env.VITE_DEEPSEEK_API_KEY}`,
           'Content-Type': 'application/json',
@@ -204,16 +251,52 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
       console.log('API Response status:', response.status);
       
       if (response.status === 200) {
-        console.log('Response data structure:', response.data);
+        console.log('Full API response:', response.data);
         
-        if (response.data.choices && response.data.choices.length > 0) {
-          const messageContent = formatResponse(response.data.choices[0].message.content);
-          console.log('Successfully received API response');
-          return messageContent;
-        } else {
-          console.error('Invalid response structure:', response.data);
-          throw new Error('Unexpected response format from OpenRouter API');
+        // Handle all possible OpenRouter response formats with type safety
+        let messageContent: string;
+        const responseData: APIResponse = response.data;
+        
+        // Format 1: Standard OpenAI format (choices[0].message.content)
+        if (responseData.choices?.[0]?.message?.content) {
+            messageContent = responseData.choices[0].message.content;
+        } 
+        // Format 2: OpenRouter wrapped format (result.message.content)
+        else if (responseData.result?.message?.content) {
+            messageContent = responseData.result.message.content;
         }
+        // Format 3: Direct message content
+        else if (responseData.message?.content) {
+            messageContent = responseData.message.content;
+        }
+        // Format 4: Simple text response
+        else if (typeof responseData === 'string') {
+            messageContent = responseData;
+        }
+        // Format 5: Array of messages
+        else if (Array.isArray(responseData) && responseData[0]?.content) {
+            messageContent = responseData[0].content;
+        }
+        // Format 6: OpenRouter error format
+        else if (responseData.error?.message) {
+            throw new Error(`API Error: ${responseData.error.message}`);
+        }
+        else {
+            console.error('Unsupported response format. Received:', JSON.stringify(responseData, null, 2));
+            throw new Error(
+                `### API Response Error\n\n` +
+                `Received unexpected response format from OpenRouter API.\n\n` +
+                `Expected one of these formats:\n` +
+                `1. Standard OpenAI: {"choices":[{"message":{"content":"..."}}]}\n` +
+                `2. OpenRouter Wrapped: {"result":{"message":{"content":"..."}}}\n` +
+                `3. Direct Message: {"message":{"content":"..."}}\n` +
+                `4. Simple Text: "response text"\n\n` +
+                `Please check the latest OpenRouter API documentation for updates.`
+            );
+        }
+
+        console.log('Successfully processed API response');
+        return messageContent; // Return raw message content since formatResponse expects OpenRouterResponse
       } else {
         throw new Error(`API Error: ${response.data?.error || 'Unknown error'} (Status: ${response.status})`);
       }
@@ -229,7 +312,8 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
         if (error.response) {
           console.error('API Error Response:', {
             status: error.response.status,
-            data: error.response.data
+            data: error.response.data,
+            headers: error.response.headers
           });
           
           switch (error.response.status) {
@@ -293,15 +377,8 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
         setCurrentImage(imageUrl);
         const userMessage = `Uploaded image: ${file.name}`;
         const newMessages = [...messages, 
-          { 
-            role: 'user', 
-            content: userMessage,
-            image: imageUrl
-          },
-          {
-            role: 'assistant',
-            content: "## Image Received\n\nI've received the satellite image. What would you like to know about it? You can:\n\n- Ask about specific objects or features\n- Request a general analysis\n- Inquire about particular regions\n- Get measurements or estimates"
-          }
+          createMessage('user', userMessage, imageUrl),
+          createMessage('assistant', "## Image Received\n\nI've received the satellite image. What would you like to know about it? You can:\n\n- Ask about specific objects or features\n- Request a general analysis\n- Inquire about particular regions\n- Get measurements or estimates")
         ];
         
         // Create or update chat with generated title
@@ -326,16 +403,35 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
     }
   };
 
-  const startNewChatWithMessages = (initialMessages: Message[], title: string) => {
-    const newChat: Chat = {
-      id: Date.now().toString(),
-      title: title,
-      messages: initialMessages,
-      createdAt: new Date(),
-    };
-    setChats(prev => [newChat, ...prev]);
-    setCurrentChatId(newChat.id);
+  const startNewChatWithMessages = (initialMessages: Message[], title: string): void => {
+    if (!Array.isArray(initialMessages)) {
+      throw new Error('initialMessages must be an array of Message objects');
+    }
+    if (typeof title !== 'string') {
+      throw new Error('title must be a string');
+    }
+
+    // Ensure all messages are properly typed
+    const validatedMessages = initialMessages.map(msg => {
+      if (!msg.role || (msg.role !== 'user' && msg.role !== 'assistant')) {
+        throw new Error(`Invalid message role: ${msg.role}`);
+      }
+      if (!msg.content) {
+        throw new Error('Message content is required');
+      }
+      return createMessage(msg.role, msg.content, msg.image);
+    });
+
+  const newChat: Chat = {
+    id: Date.now().toString(),
+    title: title,
+    messages: validatedMessages,
+    createdAt: new Date(),
   };
+  
+  setChats(prev => [newChat, ...prev]);
+  setCurrentChatId(newChat.id);
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -343,13 +439,15 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
 
     const userQuestion = input;
     setInput('');
-    setIsLoading(true);
+      setIsLoading(true);
+      // Add temporary processing message
+      setMessages(prev => [...prev, createMessage('assistant', 'Processing your request...')]);
 
     try {
       console.log('Processing user question:', userQuestion);
       
       // Add user message
-      const newMessages = [...messages, { role: 'user', content: userQuestion }];
+      const newMessages = [...messages, createMessage('user', userQuestion)];
       
       // If this is the first user message in a new chat, generate a title
       const isFirstUserMessage = messages.length === 1 && messages[0].role === 'assistant';
@@ -376,13 +474,17 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
       setMessages(newMessages);
 
       // Get AI response
-      const answer = await sendMessage(userQuestion);
-
+      const response = await sendMessage(userQuestion);
+      const formattedResponse = formatResponse({
+        result: {
+          message: {
+            content: response
+          }
+        }
+      });
+      
       // Add AI response
-      const messagesWithResponse = [...newMessages, {
-        role: 'assistant',
-        content: answer
-      }];
+      const messagesWithResponse = [...newMessages, createMessage('assistant', formattedResponse)];
       
       updateCurrentChat(messagesWithResponse);
       setMessages(messagesWithResponse);
@@ -391,12 +493,11 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
       console.error('Error in handleSubmit:', error);
       
       // Add error message to chat
-      const messagesWithError = [...messages, {
-        role: 'assistant',
-        content: error instanceof Error ? 
+      const messagesWithError = [...messages, 
+        createMessage('assistant', error instanceof Error ? 
           `### Error\n\n${error.message}` : 
-          '### Error\n\nAn unexpected error occurred. Please try again.'
-      }];
+          '### Error\n\nAn unexpected error occurred. Please try again.')
+      ];
       
       updateCurrentChat(messagesWithError);
       setMessages(messagesWithError);
@@ -412,7 +513,13 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
     if (currentChatId) {
       setChats(prev => prev.map(chat => 
         chat.id === currentChatId 
-          ? { ...chat, messages: limitedMessages }
+          ? { 
+              ...chat, 
+              messages: limitedMessages,
+              title: chat.title,
+              id: chat.id,
+              createdAt: chat.createdAt
+            }
           : chat
       ));
     }
@@ -420,8 +527,8 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} flex`}>
-      {/* Sidebar */}
-      <div className={`${isSidebarOpen ? 'w-64' : 'w-0'} ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r transition-all duration-300 overflow-hidden`}>
+      {/* Sidebar - always visible */}
+      <div className={`w-64 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r transition-all duration-300`}>
         <div className="p-4">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-2">
@@ -461,28 +568,41 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <button
-                    onClick={() => {
-                      setCurrentChatId(chat.id);
-                      setMessages(chat.messages);
-                      if (chat.messages.some(m => m.image)) {
-                        setCurrentImage(chat.messages.find(m => m.image)?.image || null);
-                      } else {
-                        setCurrentImage(null);
-                      }
-                    }}
-                    className="flex-1 text-left px-3 py-2 flex items-center space-x-2"
+                  <div
+                    className="flex-1 min-w-0"
+                    // onContextMenu={(e) => {
+                    //   e.preventDefault();
+                    //   deleteChat(chat.id, e);
+                    // }}
                   >
-                    <MessageSquare className={`h-4 w-4 flex-shrink-0 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-                    <span className={`truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      {chat.title}
-                    </span>
-                  </button>
+                    <button
+                      onClick={() => {
+                        setCurrentChatId(chat.id);
+                        setMessages(chat.messages);
+                        if (chat.messages.some(m => m.image)) {
+                          setCurrentImage(chat.messages.find(m => m.image)?.image || null);
+                        } else {
+                          setCurrentImage(null);
+                        }
+                      }}
+                      className="w-full text-left px-3 py-2 flex items-center space-x-2"
+                    >
+                      <MessageSquare className={`h-4 w-4 flex-shrink-0 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <span 
+                          className={`truncate block w-full max-w-[180px] ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}
+                          title={chat.title}
+                        >
+                          {chat.title}
+                        </span>
+                      </div>
+                    </button>
+                  </div>
                   <button
                     onClick={(e) => deleteChat(chat.id, e)}
-                    className={`p-2 ${
+                    className={`p-2 flex-shrink-0 ml-2 ${
                       isDarkMode ? 'text-gray-400 hover:text-red-400' : 'text-gray-500 hover:text-red-500'
-                    } transition-colors opacity-0 group-hover:opacity-100`}
+                    } transition-colors`}
                     title="Delete chat"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -492,16 +612,40 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
             ))}
           </div>
           
-          <label className={`w-full flex items-center justify-center px-3 py-2 ${
-            isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'
-          } text-white rounded-lg cursor-pointer transition-colors`}>
+          <label 
+            className={`w-full flex items-center justify-center px-3 py-2 border-dashed border-2 ${
+              isDarkMode ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-white'
+            } rounded-lg cursor-pointer transition-colors`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const files = e.dataTransfer.files;
+              if (files.length > 0) {
+                handleImageUpload({
+                  target: {
+                    files: files,
+                    value: files[0]?.name
+                  }
+                } as unknown as React.ChangeEvent<HTMLInputElement>);
+              }
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
             <Upload className="h-5 w-5 mr-2" />
-            <span>Upload Image</span>
+            <span>Drag and Drop Image Here or Click to Upload</span>
             <input
               type="file"
               accept="image/*"
               onChange={handleImageUpload}
               className="hidden"
+              id="image-upload"
             />
           </label>
         </div>

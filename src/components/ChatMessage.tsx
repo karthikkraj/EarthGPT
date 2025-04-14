@@ -40,18 +40,18 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isDarkMode }) => {
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
-              code({node, inline, className, children, ...props}) {
+              code({node, className, children, ...props}) {
                 const match = /language-(\w+)/.exec(className || '');
                 const code = String(children).replace(/\n$/, '');
                 
-                if (!inline && match) {
+                if (match) {
                   return (
                     <div className="relative group">
                       <button
                         onClick={() => handleCopyCode(code)}
                         className={`absolute right-2 top-2 p-1 rounded ${
                           isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                        } opacity-0 group-hover:opacity-100 transition-opacity`}
+                        } opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
                       >
                         {copiedCode === code ? (
                           <Check className="h-4 w-4 text-green-500" />
@@ -63,7 +63,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isDarkMode }) => {
                         style={isDarkMode ? oneDark : oneLight}
                         language={match[1]}
                         PreTag="div"
-                        {...props}
+                        {...(props as any)}
                       >
                         {code}
                       </SyntaxHighlighter>
