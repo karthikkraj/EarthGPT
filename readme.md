@@ -2,82 +2,101 @@
 
 # EarthGPT
 
-## Overview
-
-EarthGPT is a cutting-edge React-based web application for analyzing LISS-4 satellite imagery and handling general queries through an AI interface. It combines modern web technologies to deliver a ChatGPT-like experience with advanced image analysis features.
+EarthGPT is an AI assistant specialized in analyzing LISS-4 satellite imagery and answering general questions. It provides an interactive chat interface where users can upload satellite images, including GeoTIFF files with metadata extraction, and receive detailed analysis powered by the OpenRouter API using the Gemini 2.5 Pro model.
 
 ---
 
 ## Features
 
-### Core Functionality
-- **AI-Powered Chat Interface**: Interact with AI models via OpenRouter API.
-- **Satellite Image Analysis**: Upload and analyze LISS-4 satellite imagery.
-- **Persistent Chat History**: Save and revisit chats through local storage integration.
-- **Multiple Chat Sessions**: Manage multiple conversation threads effortlessly.
-- **Image Upload Support**: Supports satellite image uploads up to 10MB.
-- **Markdown Response Rendering**: Offers rich response formatting with syntax highlighting.
-
-### User Interface
-- **Dark/Light Mode**: Switch between dark and light themes.
-- **Responsive Design**: Optimized layout using Tailwind CSS for any device.
-- **Code Highlighting**: Syntax highlighting with copy functionality for code blocks.
-- **Loading States**: Clear visual feedback during API interactions.
-- **Error Handling**: Robust error management with user-friendly messages.
-- **Sidebar Navigation**: Convenient access to chat history and settings.
-
-### Technical Features
-- **TypeScript Integration**: Full type safety throughout the application.
-- **Modern React Patterns**: Utilizes React 18 and functional components.
-- **Environment Variable Support**: Securely manages API keys.
-- **Local Storage Management**: Efficiently handles chat history with quota awareness.
-- **Markdown Processing**: Supports GitHub Flavored Markdown (GFM).
+- Interactive chat interface supporting multiple chat sessions and message history
+- Upload and analyze satellite images, including GeoTIFF files with automatic metadata extraction and coordinate transformation
+- Dark mode toggle for comfortable viewing
+- Markdown rendering with syntax highlighting for AI responses
+- Drag-and-drop and file upload support for images
+- Responsive UI built with React 18 and Tailwind CSS
+- Persistent chat history and dark mode preferences saved in local storage
+- Robust error handling and loading states
 
 ---
 
-## Technical Stack
+## Technologies Used
 
-### Core Technologies
-- **React**: ^18.3.1
-- **TypeScript**: ^5.5.3
-- **Vite**: ^5.4.2
-- **Tailwind CSS**: ^3.4.1
+- React 18
+- TypeScript
+- Vite (build tool)
+- Tailwind CSS (styling)
+- Axios (HTTP client)
+- lucide-react (icons)
+- proj4 (coordinate transformations)
+- geotiff (GeoTIFF image parsing)
+- OpenRouter API (Gemini 2.5 Pro model)
 
-### Key Dependencies
-- **axios**: ^1.6.7 – HTTP client for API requests.
-- **lucide-react**: ^0.344.0 – Icon components for enhanced UI.
-- **react-markdown**: ^9.0.1 – Renders Markdown responses.
-- **react-syntax-highlighter**: ^15.5.0 – Highlights syntax in code blocks.
-- **remark-gfm**: ^4.0.0 – Adds GitHub Flavored Markdown support.
+---
 
-### Development Tools
-- **@vitejs/plugin-react**: ^4.3.1
-- **@tailwindcss/typography**: ^0.5.10
-- **eslint**: ^9.9.1
-- **autoprefixer**: ^10.4.18
-- **postcss**: ^8.4.35
+## User Interface
+
+- Dark mode toggle for comfortable viewing
+- Responsive design using Tailwind CSS for various devices
+- Sidebar navigation for chat sessions and settings
+- Drag-and-drop and file upload support for images
+- Loading indicators during API requests
+- Clear error messages displayed to users
+
+---
+
+## Technical Features
+
+- Full TypeScript integration for type safety
+- React 18 functional components with hooks
+- Environment variable support for API keys
+- Local storage management with quota awareness
+- Markdown rendering with GitHub Flavored Markdown (GFM)
+- Syntax highlighting for code blocks in AI responses
+- GeoTIFF metadata extraction and coordinate transformation using proj4
+
+---
+
+## Limits and Constraints
+
+- Maximum image upload size: 40MB
+- Maximum base64 image size after encoding: ~52MB
+- Maximum number of chat sessions stored: 10
+- Maximum messages per chat: 50
+
+---
+
+## Core Components
+
+### App.tsx
+- Manages chat state, image uploads, API communication, dark mode, and local storage
+- Handles user input, message formatting, and error handling
+
+### ChatMessage.tsx
+- Renders chat messages with markdown support
+- Provides syntax highlighting and copy-to-clipboard functionality
 
 ---
 
 ## Project Structure
 
-```plaintext
+```
 earth-gpt-interface/
 ├── src/
 │   ├── components/
-│   │   └── ChatMessage.tsx  # Chat message component
-│   ├── types.ts             # TypeScript interfaces
-│   ├── App.tsx              # Main application component
-│   ├── main.tsx             # Entry point
-│   └── index.css            # Global styles
-├── public/
-├── .env                     # Environment variables
-├── index.html               # HTML entry point
-├── package.json             # Project configuration
-├── tsconfig.json            # TypeScript configuration
-├── tailwind.config.js       # Tailwind CSS configuration
-├── postcss.config.js        # PostCSS configuration
-└── vite.config.ts           # Vite configuration
+│   │   └── ChatMessage.tsx       # Chat message rendering component
+│   ├── types.ts                  # TypeScript interfaces and types
+│   ├── utils/
+│   │   └── message.ts            # Message creation utilities
+│   ├── App.tsx                  # Main application component
+│   ├── main.tsx                 # React entry point
+│   └── index.css                # Global styles
+├── public/                      # Static assets
+├── index.html                   # HTML entry point
+├── package.json                 # Project dependencies and scripts
+├── tsconfig.json                # TypeScript configuration
+├── tailwind.config.js           # Tailwind CSS configuration
+├── postcss.config.js            # PostCSS configuration
+└── vite.config.ts               # Vite configuration
 ```
 
 ---
@@ -85,133 +104,82 @@ earth-gpt-interface/
 ## Setup and Installation
 
 ### Prerequisites
-- **Node.js**: v16 or higher.
-- **npm**: v7 or higher.
+
+- Node.js v16 or higher
+- npm v7 or higher
 
 ### Installation Steps
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/karthikkraj/EarthGPT
    cd earth-gpt-interface
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
 
-3. Configure environment variables:
-   Create a `.env` file with the following content:
-   ```env
-   VITE_DEEPSEEK_API_KEY=your_openrouter_api_key
+3. Create a `.env` file in the project root with your OpenRouter API key:
+
+   ```
+   VITE_DEEPSEEK_API_KEY=your_openrouter_api_key_here
    ```
 
 4. Start the development server:
+
    ```bash
    npm run dev
    ```
 
----
-
-## Configuration
-
-### Environment Variables
-- `VITE_DEEPSEEK_API_KEY`: API key for OpenRouter.
-
-### Constants
-- **Image Upload**: Maximum file size of 10MB.
-- **Base64 Encoding**: Maximum size of 13MB.
-- **Chat Sessions**: Limit of 10 chats.
-- **Messages per Chat**: Maximum of 50 messages.
+5. Open your browser and navigate to `http://localhost:5173`.
 
 ---
 
-## Core Components
+## Usage
 
-### App.tsx
-Handles:
-- Chat state and image upload management.
-- Communication with the API.
-- Dark mode toggling.
-- Interaction with local storage.
-- Error handling and feedback.
-
-### ChatMessage.tsx
-Features:
-- Renders messages with Markdown support.
-- Highlights syntax in code blocks.
-- Provides a copy-to-clipboard function.
+- Use the chat interface to ask questions or upload satellite images for analysis.
+- Upload GeoTIFF files to extract metadata and coordinate information.
+- Toggle dark mode using the button in the sidebar.
+- Manage multiple chat sessions with persistent history.
+- View AI responses rendered with markdown and syntax highlighting.
 
 ---
 
 ## API Integration
 
-### OpenRouter API
-- **Endpoint**: `https://openrouter.ai/api/v1/chat/completions`
-- **Model**: `meta-llama/llama-4-maverick:free`.
-
-#### Request Format
-```typescript
-{
-  model: MODEL_ID,
-  messages: [
-    {
-      role: "user",
-      content: string | [
-        { type: "text", text: string },
-        { type: "image_url", image_url: { url: string } }
-      ]
-    }
-  ],
-  max_tokens: 1000
-}
-```
-
-### Error Codes
-- **401**: Invalid API key.
-- **403**: Access forbidden.
-- **429**: Rate limit exceeded.
-- **402**: Payment required.
+- **Endpoint:** `https://openrouter.ai/api/v1/chat/completions`
+- **Model:** `google/gemini-2.5-pro-exp-03-25:free`
+- **Request:** Sends chat messages including text and optional image URLs.
+- **Response:** AI-generated text responses with markdown formatting.
 
 ---
 
 ## Development
 
-### Code Style
-- Functional components and React hooks.
-- TypeScript strict mode.
-- ESLint and Prettier for consistent formatting.
-
-### Best Practices
-- Modular component design.
-- Efficient state and local storage management.
-- Comprehensive error handling.
+- Written in TypeScript with React functional components and hooks.
+- Uses Tailwind CSS for styling and responsive design.
+- Chat history and dark mode preferences are saved in local storage.
+- Handles image uploads with size limits and GeoTIFF metadata extraction.
+- Robust error handling for API and network issues.
 
 ---
 
-## Build and Deployment
+## Scripts
 
-### Commands
-- **Development**: `npm run dev`
-- **Build**: `npm run build`
-- **Preview**: `npm run preview`
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint for code quality
 
 ---
 
 ## License
 
-Licensed under the [MIT License](LICENSE).
-
----
-
-## Contributing
-
-1. Fork the repository.
-2. Create a feature branch.
-3. Commit your changes.
-4. Push to your branch.
-5. Create a pull request.
+This project is private and not licensed for public use.
 
 ---
 
