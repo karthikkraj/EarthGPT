@@ -82,21 +82,22 @@ EarthGPT is an AI assistant specialized in analyzing LISS-4 satellite imagery an
 ```
 earth-gpt-interface/
 ├── src/
-│   ├── components/
-│   │   └── ChatMessage.tsx       # Chat message rendering component
-│   ├── types.ts                  # TypeScript interfaces and types
-│   ├── utils/
-│   │   └── message.ts            # Message creation utilities
-│   ├── App.tsx                  # Main application component
-│   ├── main.tsx                 # React entry point
-│   └── index.css                # Global styles
-├── public/                      # Static assets
-├── index.html                   # HTML entry point
-├── package.json                 # Project dependencies and scripts
-├── tsconfig.json                # TypeScript configuration
-├── tailwind.config.js           # Tailwind CSS configuration
-├── postcss.config.js            # PostCSS configuration
-└── vite.config.ts               # Vite configuration
+│   ├── components/              # React UI components (e.g., ChatMessage.tsx)
+│   ├── utils/                   # Utility functions (e.g., message.ts)
+│   ├── App.tsx                 # Main application component
+│   ├── main.tsx                # React entry point
+│   ├── types.ts                # TypeScript interfaces and types
+│   ├── proj4.d.ts              # Type declarations for proj4
+│   └── index.css               # Global styles
+├── dist/                       # Production build output
+├── index.html                  # HTML entry point
+├── package.json                # Project dependencies and scripts
+├── tsconfig.app.json           # TypeScript app configuration
+├── tsconfig.json               # TypeScript base configuration
+├── tailwind.config.js          # Tailwind CSS configuration
+├── postcss.config.js           # PostCSS configuration
+├── vite-env.d.ts               # Vite environment typings
+└── vite.config.ts              # Vite configuration
 ```
 
 ---
