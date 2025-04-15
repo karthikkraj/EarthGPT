@@ -547,20 +547,3 @@ For questions or support, contact [Karthik Raj](https://github.com/karthikkraj).
 
 ---
 
-
----
-
-## Support
-
-For questions or support, contact [Karthik Raj](https://github.com/karthikkraj).
-
----
-
-
----
-
-## Support
-
-For questions or support, contact [Karthik Raj](https://github.com/karthikkraj).
-
----
