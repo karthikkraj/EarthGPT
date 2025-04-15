@@ -4,6 +4,8 @@ import type { Message, Chat, OpenRouterResponse, APIResponse } from './types';
 import { createMessage } from './utils/message';
 import ChatMessage from './components/ChatMessage';
 import axios from 'axios';
+import * as GeoTIFF from 'geotiff';
+import proj4 from 'proj4';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -24,10 +26,10 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
   const [currentImage, setCurrentImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Maximum allowed image size in bytes (10MB)
-  const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
-  // Maximum allowed base64 string length (approximately 13MB)
-  const MAX_BASE64_LENGTH = 13 * 1024 * 1024;
+  // Maximum allowed image size in bytes (40MB)
+  const MAX_IMAGE_SIZE = 40 * 1024 * 1024;
+  // Maximum allowed base64 string length (approximately 52MB)
+  const MAX_BASE64_LENGTH = 52 * 1024 * 1024;
   // Maximum number of chats to store
   const MAX_CHATS = 10;
   // Maximum number of messages per chat
@@ -145,26 +147,8 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
       messageContent = 'Unexpected response format.';
     }
 
-    // Chunk long responses if needed
-    const MAX_CHUNK_SIZE = 1500;
-    if (messageContent.length > MAX_CHUNK_SIZE) {
-      const chunks = [];
-      for (let i = 0; i < messageContent.length; i += MAX_CHUNK_SIZE) {
-        chunks.push(messageContent.substring(i, i + MAX_CHUNK_SIZE));
-      }
-      return chunks.join('\n\n---\n\n');
-    }
-
-    // Enhanced formatting with markdown
-    const formattedText = messageContent
-      .replace(/\n/g, '\n\n') // Double spacing
-      .replace(/^##\s+(.*)/gm, '## $1\n') // Section headers
-      .replace(/^-\s+(.*)/gm, '- $1\n') // List items
-      .replace(/\*\*(.*?)\*\*/g, '**$1**') // Bold
-      .replace(/^\d+\.\s+(.*)/gm, '$1\n') // Numbered lists
-      .replace(/\n\s*\n/g, '\n\n'); // Clean extra newlines
-
-    return formattedText;
+    // Return the full response as a single string without chunking or extra newlines
+    return messageContent.trim();
   };
 
   const sendMessage = async (question: string) => {
@@ -355,51 +339,109 @@ I'm an AI assistant specialized in analyzing LISS-4 satellite imagery and answer
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > MAX_IMAGE_SIZE) {
         console.error('File too large:', file.size);
-        alert('Image size must be less than 10MB');
+        alert('Image size must be less than 40MB');
         return;
       }
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const imageUrl = e.target?.result as string;
-        
-        if (imageUrl.length > MAX_BASE64_LENGTH) {
-          console.error('Base64 image too large:', imageUrl.length);
-          alert('Image size too large after encoding. Please use a smaller image.');
-          return;
-        }
+      if (file.name.toLowerCase().endsWith('.tif') || file.name.toLowerCase().endsWith('.tiff')) {
+        // Handle GeoTIFF file
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const tiff = await GeoTIFF.fromArrayBuffer(arrayBuffer);
+          const image = await tiff.getImage();
+          const width = image.getWidth();
+          const height = image.getHeight();
+          const bbox = image.getBoundingBox();
+          const geoKeys = image.getGeoKeys();
 
-        setCurrentImage(imageUrl);
-        const userMessage = `Uploaded image: ${file.name}`;
-        const newMessages = [...messages, 
-          createMessage('user', userMessage, imageUrl),
-          createMessage('assistant', "## Image Received\n\nI've received the satellite image. What would you like to know about it? You can:\n\n- Ask about specific objects or features\n- Request a general analysis\n- Inquire about particular regions\n- Get measurements or estimates")
-        ];
-        
-        // Create or update chat with generated title
-        if (currentChatId) {
-          setChats(prev => prev.map(chat => 
-            chat.id === currentChatId 
-              ? { ...chat, messages: newMessages, title: generateChatTitle(userMessage) }
-              : chat
-          ));
-        } else {
-          // If no current chat, create one
-          startNewChatWithMessages(newMessages, generateChatTitle(userMessage));
+          // Attempt to get the projection info from geoKeys or image
+          let sourceProj = null;
+          if (geoKeys.ProjectedCSTypeGeoKey) {
+            sourceProj = `EPSG:${geoKeys.ProjectedCSTypeGeoKey}`;
+          } else if (geoKeys.GeographicTypeGeoKey) {
+            sourceProj = `EPSG:${geoKeys.GeographicTypeGeoKey}`;
+          }
+
+          // Transform bbox coordinates to EPSG:4326 if sourceProj is defined and different
+          let transformedBbox = bbox;
+          if (sourceProj && sourceProj !== 'EPSG:4326') {
+            try {
+              // bbox is [minX, minY, maxX, maxY]
+              const [minX, minY, maxX, maxY] = bbox;
+              const lowerLeft = proj4(sourceProj, 'EPSG:4326', [minX, minY]);
+              const upperRight = proj4(sourceProj, 'EPSG:4326', [maxX, maxY]);
+              transformedBbox = [lowerLeft[0], lowerLeft[1], upperRight[0], upperRight[1]];
+            } catch (error) {
+              console.error('Error transforming coordinates to EPSG:4326:', error);
+            }
+          }
+
+          const fileInfo = `GeoTIFF File: ${file.name}\nWidth: ${width}\nHeight: ${height}\nBounding Box (native): ${bbox.join(', ')}\nBounding Box (EPSG:4326): ${transformedBbox.join(', ')}\nGeoKeys: ${JSON.stringify(geoKeys)}`;
+
+          setCurrentImage(null);
+          const userMessage = `Uploaded GeoTIFF file: ${file.name}\n${fileInfo}`;
+          const newMessages = [...messages,
+            createMessage('user', userMessage),
+            createMessage('assistant', "## GeoTIFF Received\n\nI've extracted metadata from the GeoTIFF file including coordinates transformed to EPSG:4326. You can now ask me to analyze or geotag features based on this data.")
+          ];
+
+          if (currentChatId) {
+            setChats(prev => prev.map(chat =>
+              chat.id === currentChatId
+                ? { ...chat, messages: newMessages, title: generateChatTitle(userMessage) }
+                : chat
+            ));
+          } else {
+            startNewChatWithMessages(newMessages, generateChatTitle(userMessage));
+          }
+
+          setMessages(newMessages);
+        } catch (error) {
+          console.error('Error processing GeoTIFF file:', error);
+          alert('Failed to process GeoTIFF file. Please try another file.');
         }
-        
-        setMessages(newMessages);
-      };
-      reader.onerror = (error) => {
-        console.error('FileReader error:', error);
-        alert('Error reading the image file. Please try again.');
-      };
-      reader.readAsDataURL(file);
+      } else {
+        // Handle other image types
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageUrl = e.target?.result as string;
+
+          if (imageUrl.length > MAX_BASE64_LENGTH) {
+            console.error('Base64 image too large:', imageUrl.length);
+            alert('Image size too large after encoding. Please use a smaller image.');
+            return;
+          }
+
+          setCurrentImage(imageUrl);
+          const userMessage = `Uploaded image: ${file.name}`;
+          const newMessages = [...messages,
+            createMessage('user', userMessage, imageUrl),
+            createMessage('assistant', "## Image Received\n\nI've received the satellite image. What would you like to know about it? You can:\n\n- Ask about specific objects or features\n- Request a general analysis\n- Inquire about particular regions\n- Get measurements or estimates")
+          ];
+
+          if (currentChatId) {
+            setChats(prev => prev.map(chat =>
+              chat.id === currentChatId
+                ? { ...chat, messages: newMessages, title: generateChatTitle(userMessage) }
+                : chat
+            ));
+          } else {
+            startNewChatWithMessages(newMessages, generateChatTitle(userMessage));
+          }
+
+          setMessages(newMessages);
+        };
+        reader.onerror = (error) => {
+          console.error('FileReader error:', error);
+          alert('Error reading the image file. Please try again.');
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
